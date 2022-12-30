@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FC, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import Logo from './Logo';
 import { IconType } from 'react-icons';
 import { RiMenuFoldFill, RiMenuUnfoldFill } from 'react-icons/ri';
@@ -10,18 +10,19 @@ interface Props {
 
 const NAV_OPEN_WIDTH = 'w-60';
 const NAV_CLOSE_WIDTH = 'w-12';
+const NAV_VISIBILITY = 'nav-visibility';
 
 const AdminNav: FC<Props> = ({ navItems }): JSX.Element => {
   const navRef = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
 
-  const updateNav = () => {
+  const toggleNav = (visibility: boolean) => {
     const currentNav = navRef.current;
     if (!currentNav) return;
 
     const { classList } = currentNav;
 
-    if (visible) {
+    if (visibility) {
       // hide nav
       classList.remove(NAV_OPEN_WIDTH);
       classList.add(NAV_CLOSE_WIDTH);
@@ -30,20 +31,37 @@ const AdminNav: FC<Props> = ({ navItems }): JSX.Element => {
       classList.add(NAV_OPEN_WIDTH);
       classList.remove(NAV_CLOSE_WIDTH);
     }
-    setVisible(!visible);
   };
+
+  const updateNavState = () => {
+    toggleNav(visible);
+    const newState = !visible;
+    setVisible(newState);
+    localStorage.setItem('nav-visibility', JSON.stringify(newState));
+  };
+
+  useEffect(() => {
+    const navState = localStorage.getItem(NAV_VISIBILITY);
+    if (navState !== null) {
+      const newState = JSON.parse(navState);
+      setVisible(newState);
+      toggleNav(!newState);
+    } else {
+      setVisible(true);
+    }
+  }, []);
 
   return (
     <nav
       ref={navRef}
-      className="h-screen shadow-sm w-60 bg-secondary-light dark:bg-secondary-dark flex flex-col justify-between p-3"
+      className="h-screen shadow-sm w-60 bg-secondary-light dark:bg-secondary-dark flex flex-col justify-between p-3 transition-width overflow-hidden sticky top-0"
     >
       <div>
         <Link href="/admin" legacyBehavior>
           <a className="flex items-center space-x-2 mb-10">
             <Logo className="text-fill-highlight-light dark:text-fill-highlight-dark w-5 h-5" />
             {visible && (
-              <span className="text-highlight-light dark:text-highlight-dark text-xl font-semibold">
+              <span className="text-highlight-light dark:text-highlight-dark text-xl font-semibold leading-none">
                 Admin
               </span>
             )}
@@ -55,7 +73,9 @@ const AdminNav: FC<Props> = ({ navItems }): JSX.Element => {
             <Link href={item.href} key={item.href} legacyBehavior>
               <a className="flex items-center text-fill-highlight-light dark:text-fill-highlight-dark text-xl hover:scale-[0.98] transition">
                 <item.icon size={24} />
-                {visible && <span className="ml-2">{item.label}</span>}
+                {visible && (
+                  <span className="ml-2 leading-none">{item.label}</span>
+                )}
               </a>
             </Link>
           ))}
@@ -64,7 +84,7 @@ const AdminNav: FC<Props> = ({ navItems }): JSX.Element => {
 
       {/* Nav toggler button */}
       <button
-        onClick={updateNav}
+        onClick={updateNavState}
         className="text-highlight-light dark:text-highlight-dark hover:scale[.98] transition self-end"
       >
         {visible ? (
